@@ -8,6 +8,9 @@ AllCops:
     - 'tmp/**/*.rb'
     - 'vendor/**/*'
 
+Layout/AlignHash:
+  EnforcedColonStyle: table
+
 Layout/AlignParameters:
   EnforcedStyle: with_fixed_indentation
 
