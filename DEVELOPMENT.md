@@ -1,5 +1,33 @@
 # Ephesus::Text Development Notes
 
+## Commands
+
+- "help"
+- "what can I do"
+
+## Console
+
+- handles text input/output
+- actual IO operations delegated to an Adapter
+  - Adapters::Mock
+  - Adapters::Readline
+- process flow:
+  1. user? types an input string
+  2. Adapter captures text input
+  3. Adapter calls Console#input
+  4. Console calls #process_input
+    A. input is passed to Parser
+    B. parsed command/arguments are passed to Session#execute_command
+  5. Console result or error handler(s) is/are called with command result.
+  6. Handler calls Console#output or #error.
+  7. Console delegates output to Adapter#output or #error.
+
+### Adapter
+
+- initialized with Console instance
+- has #output, #error methods
+- on text input, calls Console#input
+
 ## Parser
 
 - #recommend method: |
