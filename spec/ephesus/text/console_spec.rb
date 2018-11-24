@@ -3,9 +3,20 @@
 require 'ephesus/core/application'
 require 'ephesus/core/controller'
 require 'ephesus/core/session'
+require 'ephesus/text/adapters/base_adapter'
 require 'ephesus/text/console'
 
 RSpec.describe Ephesus::Text::Console do
+  shared_context 'when the console is initialized with an IO adapter' do
+    let(:adapter)  { Ephesus::Text::Adapters::BaseAdapter.new }
+    let(:instance) { described_class.new(session, adapter: adapter) }
+
+    before(:example) do
+      allow(adapter).to receive(:error)
+      allow(adapter).to receive(:output)
+    end
+  end
+
   subject(:instance) { described_class.new(session) }
 
   let(:application) { Ephesus::Core::Application.new }
@@ -20,7 +31,15 @@ RSpec.describe Ephesus::Text::Console do
       expect(described_class)
         .to be_constructible
         .with(1).argument
-        .and_keywords(:parser)
+        .and_keywords(:adapter, :parser)
+    end
+  end
+
+  describe '#adapter' do
+    include_examples 'should have reader', :adapter, nil
+
+    wrap_context 'when the console is initialized with an IO adapter' do
+      it { expect(instance.adapter).to be adapter }
     end
   end
 
@@ -28,6 +47,20 @@ RSpec.describe Ephesus::Text::Console do
     include_examples 'should have reader',
       :controller,
       -> { session.controller }
+  end
+
+  describe '#error' do
+    it { expect(instance).to respond_to(:error).with(1).argument }
+
+    wrap_context 'when the console is initialized with an IO adapter' do
+      let(:string) { 'error string' }
+
+      it 'should delegate to the IO adapter' do
+        instance.error(string)
+
+        expect(adapter).to have_received(:error).with(string)
+      end
+    end
   end
 
   describe '#input' do
@@ -188,6 +221,34 @@ RSpec.describe Ephesus::Text::Console do
       it { expect(instance.input(string).data[:input]).to be == string }
 
       it { expect(instance.input(string).data[:parsed]).to be == parsed }
+    end
+
+    wrap_context 'when the console is initialized with an IO adapter' do
+      let(:string) { 'input string' }
+
+      before(:example) do
+        allow(instance).to receive(:input) # rubocop:disable RSpec/SubjectStub
+      end
+
+      it 'should call Console#input' do
+        adapter.input(string)
+
+        expect(instance).to have_received(:input).with(string)
+      end
+    end
+  end
+
+  describe '#output' do
+    it { expect(instance).to respond_to(:output).with(1).argument }
+
+    wrap_context 'when the console is initialized with an IO adapter' do
+      let(:string) { 'output string' }
+
+      it 'should delegate to the IO adapter' do
+        instance.output(string)
+
+        expect(adapter).to have_received(:output).with(string)
+      end
     end
   end
 

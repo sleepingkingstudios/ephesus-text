@@ -12,12 +12,21 @@ module Ephesus::Text
   class Console
     extend Forwardable
 
-    def initialize(session, parser: nil)
+    def initialize(session, adapter: nil, parser: nil)
       @session = session
+      @adapter = adapter
       @parser  = parser || build_parser(@session)
+
+      @adapter&.add_observer(self, :input)
     end
 
+    def_delegators :@adapter,
+      :error,
+      :output
+
     def_delegators :@session, :controller
+
+    attr_reader :adapter
 
     attr_reader :parser
 
