@@ -28,6 +28,10 @@
 - has #output, #error methods
 - on text input, calls Console#input
 
+### Handlers
+
+- ::handle_exception
+
 ## Parser
 
 - #recommend method: |
