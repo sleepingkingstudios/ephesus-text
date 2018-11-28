@@ -15,14 +15,22 @@ RSpec.describe Ephesus::Text::Console::ResultHandlers do
         match:     true
       }
     end
+    let(:command_class) { 'Spec::ExampleCommand' }
     let(:command_name)  { :do_something }
+    let(:controller)    { 'Spec::ExampleController' }
     let(:result_value)  { 'result value' }
     let(:result_errors) { Bronze::Errors.new }
     let(:result) do
       Ephesus::Core::Commands::Result
         .new(result_value, errors: result_errors)
-        .tap { |result| result.data[:command_name] = command_name }
+        .tap do |result|
+          result.data[:command_class] = command_class
+          result.data[:command_name]  = command_name
+          result.data[:controller]    = controller
+        end
     end
+
+    example_class 'Spec::ExampleCommand', Ephesus::Core::Command
 
     before(:example) do
       allow(console.parser).to receive(:parse).and_return(parsed)
@@ -75,6 +83,32 @@ RSpec.describe Ephesus::Text::Console::ResultHandlers do
     end
 
     wrap_context 'when #input returns a result' do
+      describe 'with a non-matching command class' do
+        example_class 'Spec::OtherCommand', Ephesus::Core::Command
+
+        it 'should not yield' do
+          expect do |block|
+            described_class.handle_command(Spec::OtherCommand, &block)
+
+            console.input('do something')
+          end
+            .not_to yield_control
+        end
+      end
+
+      describe 'with a non-matching command class name' do
+        example_class 'Spec::OtherCommand', Ephesus::Core::Command
+
+        it 'should not yield' do
+          expect do |block|
+            described_class.handle_command('Spec::OtherCommand', &block)
+
+            console.input('do something')
+          end
+            .not_to yield_control
+        end
+      end
+
       describe 'with a non-matching command name' do
         it 'should not yield' do
           expect do |block|
@@ -83,6 +117,28 @@ RSpec.describe Ephesus::Text::Console::ResultHandlers do
             console.input('do something')
           end
             .not_to yield_control
+        end
+      end
+
+      describe 'with a matching command class' do
+        it 'should yield the result to the block' do
+          expect do |block|
+            described_class.handle_command(Spec::ExampleCommand, &block)
+
+            console.input('do something')
+          end
+            .to yield_with_args(result)
+        end
+      end
+
+      describe 'with a matching command class name' do
+        it 'should yield the result to the block' do
+          expect do |block|
+            described_class.handle_command('Spec::ExampleCommand', &block)
+
+            console.input('do something')
+          end
+            .to yield_with_args(result)
         end
       end
 
@@ -147,6 +203,138 @@ RSpec.describe Ephesus::Text::Console::ResultHandlers do
           end
         end
         # rubocop:enable RSpec/NestedGroups
+      end
+    end
+
+    wrap_context 'with an included handlers module' do
+      wrap_context 'when #input returns a result' do
+        describe 'with a non-matching command class' do
+          example_class 'Spec::OtherCommand', Ephesus::Core::Command
+
+          it 'should not yield' do
+            expect do |block|
+              described_class.handle_command(Spec::OtherCommand, &block)
+
+              console.input('do something')
+            end
+              .not_to yield_control
+          end
+        end
+
+        describe 'with a non-matching command class name' do
+          example_class 'Spec::OtherCommand', Ephesus::Core::Command
+
+          it 'should not yield' do
+            expect do |block|
+              described_class.handle_command('Spec::OtherCommand', &block)
+
+              console.input('do something')
+            end
+              .not_to yield_control
+          end
+        end
+
+        describe 'with a non-matching command name' do
+          it 'should not yield' do
+            expect do |block|
+              described_class.handle_command(:do_nothing, &block)
+
+              console.input('do something')
+            end
+              .not_to yield_control
+          end
+        end
+
+        describe 'with a matching command class' do
+          it 'should yield the result to the block' do
+            expect do |block|
+              described_class.handle_command(Spec::ExampleCommand, &block)
+
+              console.input('do something')
+            end
+              .to yield_with_args(result)
+          end
+        end
+
+        describe 'with a matching command class name' do
+          it 'should yield the result to the block' do
+            expect do |block|
+              described_class.handle_command('Spec::ExampleCommand', &block)
+
+              console.input('do something')
+            end
+              .to yield_with_args(result)
+          end
+        end
+
+        describe 'with a matching command name' do
+          it 'should yield the result to the block' do
+            expect do |block|
+              described_class.handle_command(command_name, &block)
+
+              console.input('do something')
+            end
+              .to yield_with_args(result)
+          end
+        end
+
+        describe 'with a matching command name and on: :success' do
+          # rubocop:disable RSpec/ExampleLength
+          # rubocop:disable RSpec/NestedGroups
+          context 'when the result is passing' do
+            it 'should yield the result to the block' do
+              expect do |block|
+                described_class
+                  .handle_command(command_name, on: :success, &block)
+
+                console.input('do something')
+              end
+                .to yield_with_args(result)
+            end
+          end
+
+          wrap_context 'when the result is failing' do
+            it 'should not yield' do
+              expect do |block|
+                described_class
+                  .handle_command(command_name, on: :success, &block)
+
+                console.input('do something')
+              end
+                .not_to yield_control
+            end
+          end
+          # rubocop:enable RSpec/NestedGroups
+        end
+
+        describe 'with a matching command name and on: :failure' do
+          # rubocop:disable RSpec/NestedGroups
+          context 'when the result is passing' do
+            it 'should not yield' do
+              expect do |block|
+                described_class
+                  .handle_command(command_name, on: :failure, &block)
+
+                console.input('do something')
+              end
+                .not_to yield_control
+            end
+          end
+
+          wrap_context 'when the result is failing' do
+            it 'should yield the result to the block' do
+              expect do |block|
+                described_class
+                  .handle_command(command_name, on: :failing, &block)
+
+                console.input('do something')
+              end
+                .to yield_with_args(result)
+            end
+          end
+          # rubocop:enable RSpec/ExampleLength
+          # rubocop:enable RSpec/NestedGroups
+        end
       end
     end
   end

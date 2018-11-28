@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'ephesus/core/command'
 require 'ephesus/text/console'
 
 module Ephesus::Text
@@ -16,14 +17,14 @@ module Ephesus::Text
     # Class methods when including ResultHandlers in a console or module.
     module ClassMethods
       def handle_command(command, on: nil, &block)
-        handler_block = lambda do |result|
-          next unless result.data[:command_name] == command
-
-          next if on == :success && result.failure?
-          next if on == :failure && result.success?
-
-          instance_exec(result, &block)
-        end
+        handler_block =
+          if command.is_a?(Class)
+            command_class_handler(command.name, block: block, on: on)
+          elsif command_class_name?(command)
+            command_class_handler(command, block: block, on: on)
+          else
+            command_name_handler(command, block: block, on: on)
+          end
 
         result_handlers << handler_block
       end
@@ -44,6 +45,32 @@ module Ephesus::Text
       end
 
       private
+
+      def command_class_handler(command_class, block:, on:)
+        lambda do |result|
+          next unless result.data[:command_class] == command_class
+
+          next if on == :success && result.failure?
+          next if on == :failure && result.success?
+
+          instance_exec(result, &block)
+        end
+      end
+
+      def command_class_name?(command)
+        command.is_a?(String) && command =~ /::/
+      end
+
+      def command_name_handler(command_name, block:, on:)
+        lambda do |result|
+          next unless result.data[:command_name] == command_name
+
+          next if on == :success && result.failure?
+          next if on == :failure && result.success?
+
+          instance_exec(result, &block)
+        end
+      end
 
       def generic_error_handler(block)
         lambda do |result|
