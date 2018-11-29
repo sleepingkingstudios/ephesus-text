@@ -6,6 +6,21 @@ module Ephesus::Text::Utils
   # Formatting utilities for processing Ephesus text output.
   module Format
     class << self
+      def format_multiline_block(str, width: nil)
+        return '' if str.nil? || str.empty?
+
+        str =
+          str
+          .strip
+          .gsub(/(\n\s*)/) { |match| match.count("\n") > 1 ? "\n\n" : ' ' }
+
+        return str if width.nil?
+
+        str.each_line.map.with_object(+'') do |line, buffer|
+          buffer << word_wrap(line, width: width)
+        end
+      end
+
       def format_table(rows, gutter: ' ')
         return '' if rows.nil? || rows.empty?
 
@@ -43,6 +58,23 @@ module Ephesus::Text::Utils
         end
 
         buffer << "\n"
+      end
+
+      def word_wrap(str, width:) # rubocop:disable Metrics/AbcSize
+        buffer = +''
+        line   = +''
+
+        str.split(/\s+/).each do |word|
+          next line << word if line.empty?
+
+          next line << ' ' << word unless line.size + word.size + 1 > width
+
+          buffer << line << "\n"
+          line.clear
+          line << word
+        end
+
+        buffer << line
       end
     end
   end
