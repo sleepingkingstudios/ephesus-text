@@ -88,6 +88,11 @@ RSpec.describe Ephesus::Text::Commands::BuiltIn::Help do
           }
         }
       end
+      let(:expected) do
+        available_commands
+          .fetch(:do_something)
+          .merge(command_name: 'do something')
+      end
 
       # rubocop:disable RSpec/NestedGroups
       describe 'with no arguments' do
@@ -123,7 +128,7 @@ RSpec.describe Ephesus::Text::Commands::BuiltIn::Help do
       end
 
       describe 'with a valid command alias' do
-        let(:expected) { available_commands.fetch(:do_something) }
+        let(:expected) { super().merge(command_name: 'do the mario') }
 
         it { expect(instance.call('do the mario').value).to be == expected }
 
@@ -131,8 +136,6 @@ RSpec.describe Ephesus::Text::Commands::BuiltIn::Help do
       end
 
       describe 'with a valid command name' do
-        let(:expected) { available_commands.fetch(:do_something) }
-
         it { expect(instance.call('do something').value).to be == expected }
 
         it { expect(instance.call('do something').success?).to be true }
