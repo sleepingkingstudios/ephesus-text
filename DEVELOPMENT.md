@@ -14,3 +14,8 @@
   - "help TOPIC" returns { string: topic info }
   - "help COMMAND" returns { command: command properties }
   - coded into Help subclass or loaded from data
+
+## Utils
+
+- refactor Utils::Format::format_command_help to CommandFormatter.
+  - e.g. CommandFormatter.new(properties).help_text
