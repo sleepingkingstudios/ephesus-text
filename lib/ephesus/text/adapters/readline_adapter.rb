@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'readline'
+
 require 'ephesus/text/adapters'
 require 'ephesus/text/adapters/base_adapter'
 
